@@ -4,7 +4,6 @@
 #include "FileRepositoryDirectoryBased.h"
 #include "DataAugmenterDistributionPreserving.h"
 #include "DataAugmenterRandomErase.h"
-#include "DataAugmenterSmoothRandomErase.h"
 #include "DataAugmenterGammaCorrection.h"
 #include "DataAugmenterHistogramEqualization.h"
 #include "DataAugmenterFlip.h"
@@ -40,20 +39,25 @@ int main(int argc, char* argv[])
     const float DPDA_Power = 1.0f;   // set DPDA power - 0.0f to 1.0f
     DataAugmenterDistributionPreserving dataAugmenterDistributionPreserving(&imageLoader, &imageSaver , &noiseGenerator, DPDA_Power);
     DataAugmenterRandomErase dataAugmenterRandomErase(&imageLoader, &imageSaver);
-    DataAugmenterSmoothRandomErase dataAugmenterSmoothRandomErase(&imageLoader, &imageSaver, &noiseGenerator);
     DataAugmenterHistogramEqualization dataAugmenterHistogramEqualization(&imageLoader, &imageSaver);
     DataAugmenterGammaCorrection dataAugmenterGammaCorrection(&imageLoader, &imageSaver);
     DataAugmenterFlip dataAugmenterFlip(&imageLoader, &imageSaver);
 
     //Mix augmentation methods by addind to pipeline
     // InputImage -->  DataAugmenterFlip --> DataAugmenterGammaCorrection  -->  DataAugmenterRandomErase --> AugmentedImage
+    //First, create a dataAugmenter with the first augmentation method you wish
+    //Then, add another augmentation methos to the pipeline
+    //e.g. To combine Flip, GamaCorrectin, and Random erase you should write:
     //DataAugmenter& dataAugmenter = dataAugmenterFlip;
     //dataAugmenter.setPipelineDataAugmenter(&dataAugmenterGammaCorrection);
     //dataAugmenterGammaCorrection.setPipelineDataAugmenter(&dataAugmenterRandomErase);
 
+    //To augment images only with Distribution Preserving Data Augmentation (DPDA), use this statement
     DataAugmenter& dataAugmenter = dataAugmenterDistributionPreserving;
+    //Uncomment the pipeline statements if you want to mix up augmentation methods
     //dataAugmenter.setPipelineDataAugmenter(&dataAugmenterFlip);
     //dataAugmenter.setPipelineDataAugmenter(&dataAugmenterRandomErase);
+    //dataAugmenter.setPipelineDataAugmenter(&dataAugmenterGammaCorrection);
 
 
 
