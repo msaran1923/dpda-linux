@@ -3,7 +3,7 @@ Distribution-preserving data-augmentation
 DPDA v1.05
 ----------
 
-1. Install dependencies -- install_dependencies.sh (If you face with OpenCV problems, install OpenCV using the information at http://milq.github.io/install-opencv-ubuntu-debian/)
+1. Install dependencies -- install_dependencies.sh (Minimum required OpenCV version is 4.51. You can install OpenCV 4.51 using the information at http://milq.github.io/install-opencv-ubuntu-debian/)
 2. Go to the DPDA code directory
 3. You must create two folders named "images" and "results" in "build" directory (They are provided)
 3. Create a folder under "images" named "train"
