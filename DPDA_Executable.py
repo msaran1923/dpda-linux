@@ -4,6 +4,7 @@ import time
 from FileRepositoryDirectoryBased import FileRepositoryDirectoryBased
 from ImageLoaderOpenCV import ImageLoaderOpenCV
 from ImageSaverOpenCV import ImageSaverOpenCV
+from NoiseGeneratorPerlin import NoiseGeneratorPerlin
 
 print('Distribution-preserving Data Augmentation (DPDA) v0.02p')
 
@@ -23,7 +24,7 @@ t1 = time.time()
 
 imageLoader = ImageLoaderOpenCV()
 imageSaver = ImageSaverOpenCV()
-
+noiseGenerator = NoiseGeneratorPerlin()
 
 # to-do: implement the rest of the code
 
