@@ -23,13 +23,16 @@ class DataAugmenter:
     def sqr(x):
         return x * x
 
+    @staticmethod
     def cube(x):
         return x * x * x
 
+    @staticmethod
     def randUnity():
         randomRange = 8192
         return random.randint(0, randomRange - 1) / (randomRange - 1.0)
 
+    @staticmethod
     def randRange(minValue, maxValue):
         randomRange = 8192
         return (random.randint(0, randomRange - 1) / (randomRange - 1.0)) * (maxValue - minValue) + minValue
