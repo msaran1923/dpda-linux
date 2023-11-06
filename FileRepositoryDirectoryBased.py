@@ -1,4 +1,4 @@
-import os
+import os, sys
 from FileRepository import FileRepository
 
 class FileRepositoryDirectoryBased(FileRepository):
@@ -13,10 +13,12 @@ class FileRepositoryDirectoryBased(FileRepository):
         for directoryName in directoryNames:
             resultDirectoryName = os.path.join(outputDirectory, directoryName)
             os.makedirs(resultDirectoryName, exist_ok=True)
-
-            directoryPath = os.path.join(inputDirectory, directoryName)
-            for root, dirs, files in os.walk(directoryPath):
-                for filename in files:
-                    imagePath = os.path.join(root, filename)
-                    if self.isImage(os.path.splitext(imagePath)[1].lower()):
-                        self.imagePaths.append(imagePath)
+            
+            directoryName = os.path.join(inputDirectory, directoryName)
+            for path in os.listdir(directoryName):
+                classPath = os.path.join(directoryName, path)
+                if os.path.isdir(classPath):
+                    os.makedirs(os.path.join(resultDirectoryName, path), exist_ok=True)
+                    for imagePath in os.listdir(classPath):
+                        if self.isImage(os.path.splitext(imagePath)[1]):
+                            self.imagePaths.append(os.path.join(classPath, imagePath))
