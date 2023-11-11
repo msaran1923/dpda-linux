@@ -25,7 +25,7 @@ class DensityDecreasingPath:
             # nearest neighbour search
             unlimitedSearch = -1
             indices, distances = flann_index.knnSearch(x, K, params=unlimitedSearch)
-            count = DensityDecreasingPath.findCount(distances, h, Kmin)
+            count = DensityDecreasingPath.findCount(distances, h[0], Kmin)
             if count == 0:
                 break # converged
 
@@ -34,17 +34,17 @@ class DensityDecreasingPath:
 
             # perturb farthest neighbour point if it equals to the center point
             minimumRadius = 1.0
-            windowRadius = np.sqrt(distancesArr[count - 1])
+            windowRadius = np.sqrt(distancesArr[0][count - 1])
             if iteration == 0 and windowRadius < minimumRadius:
                 DensityDecreasingPath.perturbPoint(x, minimumRadius)
                 continue
-            h = windowRadius
+            h[0] = windowRadius
             
             # to speed-up (find pixels with same/very similar RGB values)
             DensityDecreasingPath.findSimilarFeatures(iteration, count, indicesArr, distancesArr, similarityDistance, imageWidth, pixelCount, similarPixels)
 
             # calculate mean-shift update
-            x_new = DensityDecreasingPath.meanShift(features, kernelFunctor, h, indicesArr, x, count)
+            x_new = DensityDecreasingPath.meanShift(features, kernelFunctor, h[0], indicesArr, x, count)
             if x_new is None:
                 break
 
@@ -70,7 +70,7 @@ class DensityDecreasingPath:
             mxo = mx
 
             # move to new point
-            x *= direction * mx
+            x += (direction * mx)
 
             if DensityDecreasingPath.isOutOfDomain(x):
                 break
@@ -105,11 +105,11 @@ class DensityDecreasingPath:
             similarPixels.clear()
 
             for i in range(count):
-                if distancesArr[i] <= similarityDistance:
+                if distancesArr[0][i] <= similarityDistance:
                     r = indicesArr[i]
                     if r < pixelCount:
                         xx = r % imageWidth
-                        yy = r / imageWidth
+                        yy = r // imageWidth
 
                         similarPixels.append((xx, yy))
 
@@ -153,8 +153,8 @@ class DensityDecreasingPath:
     def applySmoothnessRegularization(mx, mxo, alpha):
         epsilon = 1e-8
 
-        sOld3D = mxo.copy()
-        sNew3D = mx.copy()
+        sOld3D = mxo[0].copy()
+        sNew3D = mx[0].copy()
 
         sOld3DUnit = sOld3D / np.linalg.norm(sOld3D)
         sNew3DUnit = sNew3D / np.linalg.norm(sNew3D)
@@ -176,8 +176,8 @@ class DensityDecreasingPath:
                     v2_hat = R.dot(sNew3D.transpose()).transpose()
 
                 # now we are working in 2D (R projects vectors into xy-plane)
-                sOld = v1_hat[0:1, 0:2].copy()
-                sNew = v2_hat[0:1, 0:2].copy()
+                sOld = v1_hat[0:2].copy()
+                sNew = v2_hat[0:2].copy()
 
                 sOldUnit = sOld / np.linalg.norm(sOld)
                 sNewUnit = sNew / np.linalg.norm(sNew)
@@ -194,7 +194,7 @@ class DensityDecreasingPath:
                     mx[0, 2] = 0.0
                 else:
                     sNewProjected = np.zeros((1, 3), dtype=np.float32)
-                    sNewProjected[0, 0:2] = sNewReg[0, 0:2]
+                    sNewProjected[0, 0:2] = sNewReg[0:2]
 
                     mx = np.dot(np.linalg.inv(R), sNewProjected.transpose()).transpose()
 
@@ -214,7 +214,7 @@ class DensityDecreasingPath:
             return None
 
         u = v / s
-        c = np.dot(f, t)
+        c = np.dot(f, t[0])
         if abs(c) >= 1 - epsilon:
             return None
 

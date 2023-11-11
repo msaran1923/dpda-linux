@@ -44,5 +44,4 @@ class ImageLoader:
         imageFileName, extension = os.path.splitext(fn)
 
         inputFileName = fileDirectory + '/' + imageFileName + extension
-        print('inputFileName:', inputFileName)
         return inputFileName

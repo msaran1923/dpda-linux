@@ -122,9 +122,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
             irow = image[y]
 
             for x in range(image.shape[1]):
-                allPathPointsData = allPathPoints[pixelIndex]
-
-                if self.isEmpty(allPathPointsData, L):
+                if self.isEmpty(allPathPoints[pixelIndex], L):
                     query[0, 0] = irow[x, 0]
                     query[0, 1] = irow[x, 1]
                     query[0, 2] = irow[x, 2]
@@ -132,9 +130,11 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                     minimumPointCount = 32
                     similarityDistance = d * 2.0**2  # squared distance
                     similarPixels = []
+                    hv = [h]
                     unregularPathPoints = DensityDecreasingPath.findPath(
-                        features, flann_index, K, minimumPointCount, h, query, convergenceTolerence, L // 2,
+                        features, flann_index, K, minimumPointCount, hv, query, convergenceTolerence, L // 2,
                         direction, maximumLength, kernelFunctor, similarPixels, similarityDistance, image.shape[1], image.shape[0])
+                    h = hv[0]
 
                     pathPointCount = len(unregularPathPoints)
                     if pathPointCount <= 1:
@@ -144,11 +144,11 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                     pathPoints = self.regularizePoints(unregularPathPoints, L)
 
                     for i in range(len(pathPoints)):
-                        allPathPointsData[i] = pathPoints[i][0]  # Assign red, green, and blue
+                        allPathPoints[pixelIndex][i] = pathPoints[i][0]  # Assign red, green, and blue
 
                     # For similar pixels, use obtained density-decreasing centers to speed up
                     for pts in similarPixels:
-                        pixelIndexSimilar = pts[1] * image.shape[1] + pts[0]
+                        pixelIndexSimilar = int(pts[1] * image.shape[1] + pts[0])
                         similarPathPointsData = allPathPoints[pixelIndexSimilar]
 
                         for i in range(len(pathPoints)):
@@ -178,6 +178,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
 
             augmentedImage = np.zeros_like(image, dtype=np.uint8)
 
+            pixelIndex = 0
             for y in range(image.shape[0]):
                 irow = image[y]
                 pmrow = perlinNoise[y]
@@ -209,7 +210,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         K = 256
         L = 64
         convergenceTolerance = 0.01 * d
-        hInitial = self.estimate_h(image)
+        hInitial = self.estimateH(image)
         maximumLength = DPDA_Power * np.sqrt(hInitial)
 
         # constructs flann tree (approximate kd-tree search)
@@ -276,7 +277,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         else:
             return self.pipelineDataAugmenter.augmentImage(image)
 
-    def estimate_h(self, image):
+    def estimateH(self, image):
         distances = []
 
         max_d = 256 * 256
@@ -293,10 +294,10 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                 c3 = urow[x]
                 c4 = drow[x]
 
-                d1 = np.sum((c - c1) ** 2)
-                d2 = np.sum((c - c2) ** 2)
-                d3 = np.sum((c - c3) ** 2)
-                d4 = np.sum((c - c4) ** 2)
+                d1 = (int(c[0]) - c1[0])**2 + (int(c[1]) - c1[1])**2 + (int(c[2]) - c1[2])**2
+                d2 = (int(c[0]) - c2[0])**2 + (int(c[1]) - c2[1])**2 + (int(c[2]) - c2[2])**2
+                d3 = (int(c[0]) - c3[0])**2 + (int(c[1]) - c3[1])**2 + (int(c[2]) - c3[2])**2
+                d4 = (int(c[0]) - c4[0])**2 + (int(c[1]) - c4[1])**2 + (int(c[2]) - c4[2])**2
                 d = min(d1, d2, d3, d4)
 
                 if 1 < d < max_d:
