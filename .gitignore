@@ -1,3 +1,9 @@
 .vscode
 __pycache__
 .directory
+build/CMakeCache.txt
+build/CMakeFiles
+build/DPDA_Executable
+build/Makefile
+build/cmake_install.cmake
+build/results/train
