@@ -144,7 +144,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                     pathPoints = self.regularizePoints(unregularPathPoints, L)
 
                     for i in range(len(pathPoints)):
-                        allPathPoints[pixelIndex][i] = pathPoints[i][0]  # Assign red, green, and blue
+                        allPathPoints[pixelIndex][i] = pathPoints[i]  # Assign red, green, and blue
 
                     # For similar pixels, use obtained density-decreasing centers to speed up
                     for pts in similarPixels:
@@ -157,7 +157,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                     h = max(h * 0.99, hInitial)
 
                 pixelIndex += 1
-            print(f' [{h}] ')
+            print(f' [{h:.5f}] ', end='', flush=True)
 
         print(f'\n{100.0 * noPathPointCount / (image.shape[1] * image.shape[0])}% no density-decrease\n\n')
 
@@ -196,6 +196,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                         rgb = DPDA_Data[DPDA_Index]
 
                     airow[x] = rgb
+                    pixelIndex += 1
 
             augmentedImages.append(augmentedImage)
 

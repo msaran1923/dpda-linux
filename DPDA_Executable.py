@@ -11,7 +11,7 @@ from NoiseGeneratorPerlin import NoiseGeneratorPerlin
 from ImageLoaderOpenCV import ImageLoaderOpenCV
 from ImageSaverOpenCV import ImageSaverOpenCV
 
-print('Distribution-preserving Data Augmentation (DPDA) v0.02p')
+print('Distribution-preserving Data Augmentation (DPDA) v0.03p')
 
 directoryNames = []
 directoryNames.append('train')

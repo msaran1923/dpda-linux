@@ -190,7 +190,7 @@ class DensityDecreasingPath:
                 sNewReg = sNewReg1 if np.dot(sNewReg1, sOld) > np.dot(sNewReg2, sOld) else sNewReg2
 
                 if noRotationNeeded:
-                    mx[0, 0:3] = sNewReg[0, 0:3]
+                    mx[0, 0:2] = sNewReg[0, 0:2]
                     mx[0, 2] = 0.0
                 else:
                     sNewProjected = np.zeros((1, 3), dtype=np.float32)
