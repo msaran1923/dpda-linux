@@ -152,7 +152,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                         similarPathPointsData = allPathPoints[pixelIndexSimilar]
 
                         for i in range(len(pathPoints)):
-                            similarPathPointsData[i] = pathPoints[i][0]  # Assign red, green, and blue
+                            similarPathPointsData[i] = pathPoints[i]  # Assign red, green, and blue
 
                     h = max(h * 0.99, hInitial)
 
