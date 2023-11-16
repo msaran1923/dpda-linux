@@ -6,8 +6,6 @@ import numpy as np
 from FeatureExtractor import FeatureExtractor
 from DensityDecreasingPath import DensityDecreasingPath
 from DataAugmenter import DataAugmenter
-from NoiseGenerator import NoiseGenerator
-from RGB import RGB
 from KernelFunctions import EpanechnikovKernel
 
 class DataAugmenterDistributionPreserving(DataAugmenter):

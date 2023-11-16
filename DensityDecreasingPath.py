@@ -1,5 +1,4 @@
 import numpy as np
-import pyflann
 import random
 
 class DensityDecreasingPath:

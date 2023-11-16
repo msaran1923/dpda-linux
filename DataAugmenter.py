@@ -1,7 +1,5 @@
 import random
 import time
-from ImageLoader import ImageLoader
-from ImageSaver import ImageSaver
 
 class DataAugmenter:
     def __init__(self, imageLoader, imageSaver):

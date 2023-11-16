@@ -1,4 +1,4 @@
-import os, sys
+import os
 from FileRepository import FileRepository
 
 class FileRepositoryDirectoryBased(FileRepository):
