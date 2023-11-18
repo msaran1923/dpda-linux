@@ -1,3 +1,2 @@
-cv2
 numpy
-pyflann
+pyflann3
