@@ -1,4 +1,5 @@
 import numpy as np
+import pyflann
 import random
 
 class DensityDecreasingPath:
@@ -152,13 +153,13 @@ class DensityDecreasingPath:
     def applySmoothnessRegularization(mx, mxo, alpha):
         epsilon = 1e-8
 
-        sOld3D = mxo[0].copy()
-        sNew3D = mx[0].copy()
+        sOld3D = np.copy(mxo)
+        sNew3D = np.copy(mx)
 
-        sOld3DUnit = sOld3D / np.linalg.norm(sOld3D)
-        sNew3DUnit = sNew3D / np.linalg.norm(sNew3D)
+        sOld3DUnit = (1.0 / np.linalg.norm(sOld3D)) * sOld3D
+        sNew3DUnit = (1.0 / np.linalg.norm(sNew3D)) * sNew3D
 
-        isProjectionNeeded = np.dot(sOld3DUnit, sNew3DUnit) < np.cos(alpha)
+        isProjectionNeeded = np.dot(sOld3DUnit.flatten(), sNew3DUnit.flatten()) < np.cos(alpha)
         if isProjectionNeeded:
             a = np.cross(sOld3DUnit, sNew3DUnit)
             isInSameDirection = np.linalg.norm(a) < epsilon
@@ -175,8 +176,8 @@ class DensityDecreasingPath:
                     v2_hat = R.dot(sNew3D.transpose()).transpose()
 
                 # now we are working in 2D (R projects vectors into xy-plane)
-                sOld = v1_hat[0:2].copy()
-                sNew = v2_hat[0:2].copy()
+                sOld = v1_hat[0, 0:2].copy()
+                sNew = v2_hat[0, 0:2].copy()
 
                 sOldUnit = sOld / np.linalg.norm(sOld)
                 sNewUnit = sNew / np.linalg.norm(sNew)
@@ -189,7 +190,7 @@ class DensityDecreasingPath:
                 sNewReg = sNewReg1 if np.dot(sNewReg1, sOld) > np.dot(sNewReg2, sOld) else sNewReg2
 
                 if noRotationNeeded:
-                    mx[0, 0:2] = sNewReg[0, 0:2]
+                    mx[0, 0:2] = sNewReg[0:2]
                     mx[0, 2] = 0.0
                 else:
                     sNewProjected = np.zeros((1, 3), dtype=np.float32)
