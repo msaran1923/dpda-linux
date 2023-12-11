@@ -2,6 +2,7 @@ import cv2
 import os
 import time
 import threading
+import h5py
 import numpy as np
 from FeatureExtractor import FeatureExtractor
 from DensityDecreasingPath import DensityDecreasingPath
@@ -200,7 +201,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
 
         return augmentedImages
 
-    def distributionPreservingDataAugmentation(self, image, augmentationCount, DPDA_Power, augmentationPercentage):
+    def distributionPreservingDataAugmentation(self, image, augmentationCount, DPDA_Power, augmentationPercentage, imageFileName):
         # create color features
         d = image.shape[2]
         features = FeatureExtractor.create(image)
@@ -222,12 +223,30 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         kernelFunctor = EpanechnikovKernel()
         allPathPoints = None
         if atLeastOneDPDA_Application:
-            allPathPoints = self.createDensityDecreasingPath(image, hInitial, L, features, flann_index,
+            if os.path.exists(f'pathpoints/pathpoint_{imageFileName}.hdf5'):
+                allPathPoints = self.allPathPointsLoader(imageFileName)
+            else:
+                allPathPoints = self.createDensityDecreasingPath(image, hInitial, L, features, flann_index,
                                                                  kernelFunctor, d, K, convergenceTolerance, maximumLength)
+                self.allPathPointsWriter(allPathPoints, imageFileName)
 
         augmentedImages = self.createAugmentedImages(image, allPathPoints, d, L, augmentationCount, applyDPDA_Decisions)
 
         return augmentedImages
+
+    def allPathPointsWriter(self, allPathPoints, imageFileName):
+        fileName = f'pathpoints/pathpoint_{imageFileName}.hdf5'
+        datasetName = 'allPathPoints'
+
+        with h5py.File(fileName, 'w') as h5io:
+            h5io.create_dataset(datasetName, data=allPathPoints)
+        
+
+    def allPathPointsLoader(self, imageFileName):   
+        fileName = f'pathpoints/pathpoint_{imageFileName}.hdf5'
+        with h5py.File(fileName, 'r') as f:
+            allPathPoints = np.array(f['allPathPoints'])
+        return allPathPoints
 
     def execute(self, inputDirectory, outputDirectory, imagePath, augmentationCount, scaleFactor, augmentationPercentage):
         fileDirectory = os.path.dirname(imagePath)
@@ -247,7 +266,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         t1 = time.time()
 
         # DPDA augmentation
-        augmentedImages = self.distributionPreservingDataAugmentation(resizedImage, augmentationCount, self.DPDA_Power, augmentationPercentage)
+        augmentedImages = self.distributionPreservingDataAugmentation(resizedImage, augmentationCount, self.DPDA_Power, augmentationPercentage, imageFileName)
 
         t2 = time.time()
         duration = t2 - t1

@@ -1,6 +1,7 @@
 #pragma once
 #include "OSDefines.h"
 #include <opencv2/opencv.hpp>
+#include <opencv2/hdf.hpp>
 #include "FeatureExtractor.h"
 #include "DensityDecreasingPath.h"
 #include "DataAugmenter.h"
@@ -269,7 +270,7 @@ public:
 	}
 
 	vector<Mat> distributionPreservingDataAugmentation(Mat& image, int augmentationCount, 
-		float DPDA_Power, int augmentationPercentage) {
+		float DPDA_Power, int augmentationPercentage, const String imageFileName) {
 
 		// create color features
 		int d = image.channels();
@@ -299,13 +300,58 @@ public:
 		EpanechnikovKernel kernelFunctor;
 		Mat allPathPoints;
 		if (atLeastOneDPDA_Application) {
-			allPathPoints = createDensityDecreasingPath(image, hInitial, L, features, flann_index, kernelFunctor,
-													 d, K, convergenceTolerance, maximumLength);
+			if (boost::filesystem::exists("pathpoints/pathpoint_" + imageFileName + ".hdf5"))
+				allPathPoints = allPathPointsLoader(imageFileName);
+			else {
+				allPathPoints = createDensityDecreasingPath(image, hInitial, L, features, flann_index, kernelFunctor,
+													 	d, K, convergenceTolerance, maximumLength);
+				allPathPointsWriter(allPathPoints, imageFileName);
+			}
 		}
 
 		vector<Mat> augmentedImages = createAugmentedImages(image, allPathPoints, d, L, augmentationCount, applyDPDA_Decisions);
 
 		return augmentedImages;
+	}
+
+	void allPathPointsWriter(const Mat& allPathPoints, String imageFileName) {
+		String fileName = "pathpoints/pathpoint_" + imageFileName + ".hdf5";
+		String datasetName = "allPathPoints";
+		
+		int sizes[] = {allPathPoints.rows, allPathPoints.cols, 3};
+		Mat apptmp(3, sizes, CV_32FC1);
+		
+		for (int i = 0; i < allPathPoints.rows; ++i) {
+			for (int j = 0; j < allPathPoints.cols; ++j) {
+				RGB<float> elem = allPathPoints.at<RGB<float>>(i, j);
+				apptmp.at<cv::Vec3f>(i, j) = cv::Vec3f(elem.red, elem.green, elem.blue);
+			}
+		}
+
+		Ptr<hdf::HDF5> h5io = hdf::open(fileName);
+		h5io->dswrite(apptmp, datasetName);
+		h5io->close();
+	}
+
+	Mat allPathPointsLoader(String imageFileName) {
+		String fileName = "pathpoints/pathpoint_" + imageFileName + ".hdf5";
+		String datasetName = "allPathPoints";
+		
+		Mat apptmp;
+		cv::Ptr<cv::hdf::HDF5> h5io = cv::hdf::open(fileName);
+		h5io->dsread(apptmp, datasetName);
+		h5io->close();
+
+		int sizes[] = {apptmp.size[0], apptmp.size[1]};
+		Mat allPathPoints(2, sizes, CV_32FC3, Scalar(0));
+		
+		for (int i = 0; i < allPathPoints.rows; ++i) {
+			for (int j = 0; j < allPathPoints.cols; ++j) {
+				allPathPoints.at<RGB<float>>(i, j) = apptmp.at<RGB<float>>(i, j);
+			}
+		}
+
+		return allPathPoints;
 	}
 
 	bool execute(String inputDirectory, String outputDirectory, path& imagePath,
@@ -330,7 +376,7 @@ public:
 		auto t1 = std::chrono::high_resolution_clock::now();
 
 		// DPDA augmentation
-		vector<Mat> augmentedImages = distributionPreservingDataAugmentation(resizedImage, augmentationCount, DPDA_Power, augmentationPercentage);
+		vector<Mat> augmentedImages = distributionPreservingDataAugmentation(resizedImage, augmentationCount, DPDA_Power, augmentationPercentage, imageFileName);
 
 		auto t2 = std::chrono::high_resolution_clock::now();
 		auto duration = chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0;
