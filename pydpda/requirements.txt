@@ -1,2 +1,3 @@
 numpy
 pyflann3
+h5py
