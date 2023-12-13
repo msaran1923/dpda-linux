@@ -7,3 +7,6 @@ build/DPDA_Executable
 build/Makefile
 build/cmake_install.cmake
 build/results/train
+build/.cmake
+build/compile_commands.json
+build/pathpoints/pathpoint_Abyssinian_6.hdf5
