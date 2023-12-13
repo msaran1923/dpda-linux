@@ -13,7 +13,7 @@ class DataAugmenterHistogramEqualization(DataAugmenter):
 
         inputFileName = os.path.join(fileDirectory, imageFileName + extension)
 
-        image = self.ImageLoader.load(inputFileName)
+        image = self.imageLoader.load(inputFileName)
         if image is None:
             print()
             return False

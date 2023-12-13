@@ -13,7 +13,7 @@ class DataAugmenterRandomErase(DataAugmenter):
 
         inputFileName = os.path.join(fileDirectory, imageFileName + extension)
 
-        image = self.ImageLoader.load(inputFileName)
+        image = self.imageLoader.load(inputFileName)
         if image is None:
             print()
             return False
@@ -56,9 +56,7 @@ class DataAugmenterRandomErase(DataAugmenter):
 
         for y in range(y1, y2):
             for x in range(x1, x2):
-                augmentedImage[y, x, 0] = 0
-                augmentedImage[y, x, 1] = 0
-                augmentedImage[y, x, 2] = 0  # Set blue channel to 0
+                augmentedImage[y, x] = [0, 0, 0]
 
         if self.pipelineDataAugmenter is None:
             return augmentedImage

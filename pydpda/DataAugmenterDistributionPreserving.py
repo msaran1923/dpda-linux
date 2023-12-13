@@ -19,8 +19,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
     def findCoefficients(self, x, dimensionIndex):
         n = len(x)
 
-        A = np.zeros((n, n), dtype=np.float64)
-        A.fill(1.0)
+        A = np.ones((n, n), dtype=np.float64)
         np.fill_diagonal(A, 4.0)
 
         f = np.zeros((n, 1), dtype=np.float64)
@@ -122,18 +121,14 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
 
             for x in range(image.shape[1]):
                 if self.isEmpty(allPathPoints[pixelIndex], L):
-                    query[0, 0] = irow[x, 0]
-                    query[0, 1] = irow[x, 1]
-                    query[0, 2] = irow[x, 2]
+                    query[0] = irow[x]
 
                     minimumPointCount = 32
                     similarityDistance = d * 2.0**2  # squared distance
                     similarPixels = []
-                    hv = [h]
-                    unregularPathPoints = DensityDecreasingPath.findPath(
-                        features, flann_index, K, minimumPointCount, hv, query, convergenceTolerence, L // 2,
+                    unregularPathPoints, h = DensityDecreasingPath.findPath(
+                        features, flann_index, K, minimumPointCount, h, query, convergenceTolerence, L // 2,
                         direction, maximumLength, kernelFunctor, similarPixels, similarityDistance, image.shape[1], image.shape[0])
-                    h = hv[0]
 
                     pathPointCount = len(unregularPathPoints)
                     if pathPointCount <= 1:
@@ -312,10 +307,10 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                 c3 = urow[x]
                 c4 = drow[x]
 
-                d1 = (int(c[0]) - c1[0])**2 + (int(c[1]) - c1[1])**2 + (int(c[2]) - c1[2])**2
-                d2 = (int(c[0]) - c2[0])**2 + (int(c[1]) - c2[1])**2 + (int(c[2]) - c2[2])**2
-                d3 = (int(c[0]) - c3[0])**2 + (int(c[1]) - c3[1])**2 + (int(c[2]) - c3[2])**2
-                d4 = (int(c[0]) - c4[0])**2 + (int(c[1]) - c4[1])**2 + (int(c[2]) - c4[2])**2
+                d1 = int(int(c[0]) - c1[0])**2 + int(int(c[1]) - c1[1])**2 + int(int(c[2]) - c1[2])**2
+                d2 = int(int(c[0]) - c2[0])**2 + int(int(c[1]) - c2[1])**2 + int(int(c[2]) - c2[2])**2
+                d3 = int(int(c[0]) - c3[0])**2 + int(int(c[1]) - c3[1])**2 + int(int(c[2]) - c3[2])**2
+                d4 = int(int(c[0]) - c4[0])**2 + int(int(c[1]) - c4[1])**2 + int(int(c[2]) - c4[2])**2
                 d = min(d1, d2, d3, d4)
 
                 if 1 < d < max_d:
