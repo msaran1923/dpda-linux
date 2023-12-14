@@ -1,9 +1,12 @@
-.vscode
-__pycache__
-.directory
+build/.cmake
 build/CMakeCache.txt
 build/CMakeFiles
+build/cmake_install.cmake
+build/compile_commands.json
 build/DPDA_Executable
 build/Makefile
-build/cmake_install.cmake
+build/pathpoints/*.hdf5
 build/results/train
+.directory
+__pycache__
+.vscode

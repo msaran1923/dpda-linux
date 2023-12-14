@@ -1,12 +1,23 @@
 import random
 
+# http://mrl.nyu.edu/~perlin/noise/  (2002, Ken Perlin)
+# With an extra method that generates a new permutation vector (this is not present in the origina implementation)
+
 class PerlinNoise:
     def __init__(self, seed=None):
         if seed is not None:
+            # Generate a new permutation vector based on the value of seed
+
+            # Fill p with values from 0 to 255
             self.p = list(range(256))
+
+            # Initialize with seed
             random.seed(seed)
+
+            # Shuffle the vector
             random.shuffle(self.p)
         else:
+            # Initialize with the reference values for the permutation vector
             self.p = [
                 151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,
                 8,99,37,240,21,10,23,190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,
@@ -21,21 +32,27 @@ class PerlinNoise:
                 107,49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
                 138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
             ]
+        # Duplicate the permutation vector
         self.p += self.p  # Duplicate the permutation vector
 
+    # Get a noise value, for 2D images z can have any value
     def noise(self, x, y, z):
+        # Find the unit cube that contains the point
         X = int(x) & 255
         Y = int(y) & 255
         Z = int(z) & 255
 
+        # Find relative x, y,z of point in cube
         x -= int(x)
         y -= int(y)
         z -= int(z)
 
+        # Compute fade curves for each of x, y, z
         u = self.fade(x)
         v = self.fade(y)
         w = self.fade(z)
 
+        # Hash coordinates of the 8 cube corners
         A = self.p[X] + Y
         AA = self.p[A] + Z
         AB = self.p[A + 1] + Z
@@ -43,6 +60,7 @@ class PerlinNoise:
         BA = self.p[B] + Z
         BB = self.p[B + 1] + Z
 
+        # Add blended results from 8 corners of cube
         res = self.lerp(w, self.lerp(v, self.lerp(u, self.grad(self.p[AA], x, y, z), self.grad(self.p[BA], x - 1, y, z)),
                             self.lerp(u, self.grad(self.p[AB], x, y - 1, z), self.grad(self.p[BB], x - 1, y - 1, z))),
                             self.lerp(v, self.lerp(u, self.grad(self.p[AA + 1], x, y, z - 1), self.grad(self.p[BA + 1], x - 1, y, z - 1)),
@@ -58,6 +76,8 @@ class PerlinNoise:
 
     def grad(self, hash, x, y, z):
         h = hash & 15
+
+        # Convert lower 4 bits of hash into 12 gradient directions
         u = x if h < 8 else y
         v = y if h < 4 else x if h == 12 or h == 14 else z
         return (u if h & 1 == 0 else -u) + (v if h & 2 == 0 else -v)

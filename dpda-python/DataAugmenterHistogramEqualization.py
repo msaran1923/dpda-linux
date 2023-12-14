@@ -3,7 +3,7 @@ import os
 import random
 from DataAugmenter import DataAugmenter
 
-class DataAugmenterRandomErase(DataAugmenter):
+class DataAugmenterHistogramEqualization(DataAugmenter):
     def __init__(self, ImageLoader, imageSaver):
         super().__init__(ImageLoader, imageSaver)
 
@@ -13,7 +13,7 @@ class DataAugmenterRandomErase(DataAugmenter):
 
         inputFileName = os.path.join(fileDirectory, imageFileName + extension)
 
-        image = self.ImageLoader.load(inputFileName)
+        image = self.imageLoader.load(inputFileName)
         if image is None:
             print()
             return False
@@ -27,9 +27,9 @@ class DataAugmenterRandomErase(DataAugmenter):
 
         # write augmented images (x count)
         for k in range(augmentationCount):
-            applyRandomErase = random.randint(0, 99) < augmentationPercentage
+            applyHistogramEqualization = random.randint(0, 99) < augmentationPercentage
 
-            if applyRandomErase:
+            if applyHistogramEqualization:
                 outputFileName = f"{fileDirectory}/{imageFileName}_{k}{extension}"
                 outputFileName = outputFileName.replace(inputDirectory, outputDirectory)
 
@@ -41,24 +41,16 @@ class DataAugmenterRandomErase(DataAugmenter):
     def augmentImage(self, image):
         augmentedImage = image.copy()
 
-        minPatchWidth = int(0.05 * image.shape[1])
-        minPatchHeight = int(0.05 * image.shape[0])
-        maxPatchWidth = int(0.50 * image.shape[1])
-        maxPatchHeight = int(0.50 * image.shape[0])
+        if image.shape[2] == 3:
+            rgbChannels = cv2.split(image)
 
-        randomWidth = max(random.randint(0, maxPatchWidth), minPatchWidth)
-        randomHeight = max(random.randint(0, maxPatchHeight), minPatchHeight)
-
-        x1 = max(random.randint(0, image.shape[1] - minPatchWidth), 1)
-        y1 = max(random.randint(0, image.shape[0] - minPatchHeight), 1)
-        x2 = min(x1 + randomWidth, image.shape[1] - 1)
-        y2 = min(y1 + randomHeight, image.shape[0] - 1)
-
-        for y in range(y1, y2):
-            for x in range(x1, x2):
-                augmentedImage[y, x, 0] = 0
-                augmentedImage[y, x, 1] = 0
-                augmentedImage[y, x, 2] = 0  # Set blue channel to 0
+            equalizedImages = []
+            for i in range(3):
+                equalizedImage = cv2.equalizeHist(rgbChannels[i])
+                equalizedImages.append(equalizedImage)
+            augmentedImage = cv2.merge(equalizedImages)
+        if image.shape[2] == 1:
+            augmentedImage = cv2.equalizeHist(image)
 
         if self.pipelineDataAugmenter is None:
             return augmentedImage

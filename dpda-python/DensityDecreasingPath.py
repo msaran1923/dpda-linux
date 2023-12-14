@@ -25,7 +25,7 @@ class DensityDecreasingPath:
             # nearest neighbour search
             unlimitedSearch = -1
             indices, distances = flann_index.knnSearch(x, K, params=unlimitedSearch)
-            count = DensityDecreasingPath.findCount(distances, h[0], Kmin)
+            count = DensityDecreasingPath.findCount(distances, h, Kmin)
             if count == 0:
                 break # converged
 
@@ -38,13 +38,13 @@ class DensityDecreasingPath:
             if iteration == 0 and windowRadius < minimumRadius:
                 DensityDecreasingPath.perturbPoint(x, minimumRadius)
                 continue
-            h[0] = windowRadius
+            h = windowRadius
             
             # to speed-up (find pixels with same/very similar RGB values)
             DensityDecreasingPath.findSimilarFeatures(iteration, count, indicesArr, distancesArr, similarityDistance, imageWidth, pixelCount, similarPixels)
 
             # calculate mean-shift update
-            x_new = DensityDecreasingPath.meanShift(features, kernelFunctor, h[0], indicesArr, x, count)
+            x_new = DensityDecreasingPath.meanShift(features, kernelFunctor, h, indicesArr, x, count)
             if x_new is None:
                 break
 
@@ -57,16 +57,16 @@ class DensityDecreasingPath:
                 break # converged
 
             # mean-shift vector length regularization  (projected to domain for constraint 1)
-            DensityDecreasingPath.applyLengthRegularization(mx, r, maximumLength)
+            mx = DensityDecreasingPath.applyLengthRegularization(mx, r, maximumLength)
 
             if mxo is not None:
                 # momentum for gradient descent
                 gamma = 0.50
-                DensityDecreasingPath.applyMomentumToGradientDescent(mx, mxo, gamma)
+                mx = DensityDecreasingPath.applyMomentumToGradientDescent(mx, mxo, gamma)
 
                 # mean-shift vector direction regularization  (will be projected to domain for constraint 2)					
                 maximumAngle = np.pi / 4.0
-                DensityDecreasingPath.applySmoothnessRegularization(mx, mxo, maximumAngle)
+                mx = DensityDecreasingPath.applySmoothnessRegularization(mx, mxo, maximumAngle)
             mxo = mx
 
             # move to new point
@@ -80,7 +80,7 @@ class DensityDecreasingPath:
 
             iteration += 1
         
-        return pathPoints
+        return pathPoints, h
 
     @staticmethod
     def findCount(distances, h, minimumPointCount):
@@ -143,11 +143,11 @@ class DensityDecreasingPath:
 
     @staticmethod
     def applyLengthRegularization(mx, r, maximumLength):
-        mx = min(r, maximumLength) * (mx / r)
+        return min(r, maximumLength) * (mx / r)
 
     @staticmethod
     def applyMomentumToGradientDescent(mx, mxo, gamma):
-        mx = gamma * mxo + (1.0 - gamma) * mx
+        return gamma * mxo + (1.0 - gamma) * mx
 
     @staticmethod
     def applySmoothnessRegularization(mx, mxo, alpha):
@@ -197,6 +197,7 @@ class DensityDecreasingPath:
                     sNewProjected[0, 0:2] = sNewReg[0:2]
 
                     mx = np.dot(np.linalg.inv(R), sNewProjected.transpose()).transpose()
+        return mx
 
     # Efficiently Building a Matrix to Rotate One Vector to Another
 	# https://www.tandfonline.com/doi/abs/10.1080/10867651.1999.10487509
