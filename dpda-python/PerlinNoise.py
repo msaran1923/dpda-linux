@@ -1,3 +1,4 @@
+import numpy as np
 import random
 
 # http://mrl.nyu.edu/~perlin/noise/  (2002, Ken Perlin)
@@ -9,16 +10,16 @@ class PerlinNoise:
             # Generate a new permutation vector based on the value of seed
 
             # Fill p with values from 0 to 255
-            self.p = list(range(256))
+            self.p = np.arange(256)
 
             # Initialize with seed
             random.seed(seed)
 
             # Shuffle the vector
-            random.shuffle(self.p)
+            np.random.shuffle(self.p)
         else:
             # Initialize with the reference values for the permutation vector
-            self.p = [
+            self.p = np.array([
                 151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,
                 8,99,37,240,21,10,23,190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,
                 35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,
@@ -31,21 +32,21 @@ class PerlinNoise:
                 97,228,251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,
                 107,49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
                 138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
-            ]
+            ])
         # Duplicate the permutation vector
-        self.p += self.p  # Duplicate the permutation vector
+        self.p = np.concatenate((self.p, self.p))
 
     # Get a noise value, for 2D images z can have any value
     def noise(self, x, y, z):
         # Find the unit cube that contains the point
-        X = int(x) & 255
-        Y = int(y) & 255
-        Z = int(z) & 255
+        X = np.int_(x) & 255
+        Y = np.int_(y) & 255
+        Z = np.int_(z) & 255
 
         # Find relative x, y,z of point in cube
-        x -= int(x)
-        y -= int(y)
-        z -= int(z)
+        x -= np.int_(x)
+        y -= np.int_(y)
+        z -= np.int_(z)
 
         # Compute fade curves for each of x, y, z
         u = self.fade(x)
@@ -78,6 +79,6 @@ class PerlinNoise:
         h = hash & 15
 
         # Convert lower 4 bits of hash into 12 gradient directions
-        u = x if h < 8 else y
-        v = y if h < 4 else x if h == 12 or h == 14 else z
-        return (u if h & 1 == 0 else -u) + (v if h & 2 == 0 else -v)
+        u = np.where(h < 8, x, y)
+        v = np.where(h < 4, y, np.where((h == 12) | (h == 14), x, z))
+        return (np.where(h & 1 == 0, u, -u) + np.where(h & 2 == 0, v, -v))

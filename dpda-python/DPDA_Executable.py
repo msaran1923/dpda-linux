@@ -11,7 +11,7 @@ from DataAugmenterFlip import DataAugmenterFlip
 from ImageLoaderOpenCV import ImageLoaderOpenCV
 from ImageSaverOpenCV import ImageSaverOpenCV
 
-print('Distribution-preserving Data Augmentation (DPDA) v1.07p')
+print('Distribution-preserving Data Augmentation (DPDA) v1.08p')
 
 directoryNames = []
 directoryNames.append('train')
