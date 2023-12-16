@@ -54,9 +54,7 @@ class DataAugmenterRandomErase(DataAugmenter):
         x2 = min(x1 + randomWidth, image.shape[1] - 1)
         y2 = min(y1 + randomHeight, image.shape[0] - 1)
 
-        for y in range(y1, y2):
-            for x in range(x1, x2):
-                augmentedImage[y, x] = [0, 0, 0]
+        augmentedImage[y1:y2, x1:x2] = [0, 0, 0]
 
         if self.pipelineDataAugmenter is None:
             return augmentedImage
