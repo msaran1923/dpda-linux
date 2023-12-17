@@ -9,13 +9,11 @@ class DensityDecreasingPath:
     
     @staticmethod
     def findPath(features, flann_index, K, Kmin, h, query, convergenceTolerance, maxIteration, direction, maximumLength, kernelFunctor, similarPixels, similarityDistance, imageWidth, imageHeight):
-        pathPoints = []
-
         epsilon = 1e-8
         convergenceTolerance = max(convergenceTolerance, epsilon)
 
         x = query.copy()
-        pathPoints.append(x.copy())
+        pathPoints = [x.copy()]
 
         pixelCount = imageWidth * imageHeight
 
@@ -84,53 +82,45 @@ class DensityDecreasingPath:
 
     @staticmethod
     def findCount(distances, h, minimumPointCount):
-        squaredRadius = h * h
+        squaredRadius = h**2
+        mask = distances[0, minimumPointCount - 1:] >= squaredRadius
+        first_index = np.argmax(mask)
 
-        for i in range(minimumPointCount - 1, distances.shape[1]):
-            if distances[0, i] >= squaredRadius:
-                return i + 1
-
-        return minimumPointCount
+        return minimumPointCount + first_index if np.any(mask) else minimumPointCount
 
     @staticmethod
     def perturbPoint(x, noiseLevel):
-        for i in range(x.shape[1]):
-            noise = noiseLevel * (random.randint(0, 1) * 2 - 1) * (random.random() + 1.0)
-            x[0, i] = max(min(x[0, i] + noise, 255.0), 0.0)
+        noise = noiseLevel * (np.random.randint(0, 2, size=x.shape[1]) * 2 - 1) * (np.random.rand(1, x.shape[1]) + 1.0)
+        x[0, :] = np.clip(x[0, :] + noise, 0.0, 255.0)
 
     @staticmethod
     def findSimilarFeatures(iteration, count, indicesArr, distancesArr, similarityDistance, imageWidth, pixelCount, similarPixels):
-        first_iteration = 0
-        if iteration == first_iteration:
+        firstIteration = 0
+
+        if iteration == firstIteration:
             similarPixels.clear()
+            mask = distancesArr[0][:count] <= similarityDistance
+            rValues = indicesArr[:count][mask]
 
-            for i in range(count):
-                if distancesArr[0][i] <= similarityDistance:
-                    r = indicesArr[i]
-                    if r < pixelCount:
-                        xx = r % imageWidth
-                        yy = r // imageWidth
+            xxValues = rValues % imageWidth
+            yyValues = rValues // imageWidth
+            
+            validIndices = rValues < pixelCount
 
-                        similarPixels.append((xx, yy))
+            similarPixels.extend(zip(xxValues[validIndices], yyValues[validIndices]))
 
     @staticmethod
     def meanShift(features, kernelFunctor, h, indicesArr, x, count):
         epsilon = 1e-8
 
-        kde = 0.0
-        C_numerator = np.zeros_like(x, dtype=np.float64)
+        x_i = features[indicesArr[:count], :]
+        d = np.linalg.norm((x - x_i) / h, axis=1)
+        x_d = kernelFunctor.eval(d)
+        
+        sqr_x_d = x_d**2
 
-        for i in range(count):
-            r = indicesArr[i]
-            x_i = features[r:r+1, :]
-
-            d = np.linalg.norm((x - x_i) / h)
-            x_d = kernelFunctor.eval(d)
-
-            sqr_x_d = x_d * x_d
-
-            kde += sqr_x_d
-            C_numerator += x_i * sqr_x_d
+        kde = np.sum(sqr_x_d)
+        C_numerator = np.sum(x_i * sqr_x_d.reshape(-1, 1), axis=0)
 
         if kde < epsilon or np.linalg.norm(C_numerator) < epsilon:
             return None  # converged
@@ -240,11 +230,7 @@ class DensityDecreasingPath:
 
     @staticmethod
     def dotProduct(a, b):
-        sum = 0.0
-        for i in range(a.size):
-            sum += a[i] * b[i]
-
-        return sum
+        return np.dot(a, b)
 
     @staticmethod
     def getRotationMatrix(beta):
