@@ -19,31 +19,24 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
     def findCoefficients(self, x, dimensionIndex):
         n = len(x)
 
-        A = np.ones((n, n), dtype=np.float64)
-        np.fill_diagonal(A, 4.0)
+        y = np.array([point[0][dimensionIndex] for point in x], dtype=np.float64)
+
+        A = np.eye(n) * 4.0
+        np.fill_diagonal(A[1:], 1.0)
+        np.fill_diagonal(A[:, 1:], 1.0)
 
         f = np.zeros((n, 1), dtype=np.float64)
-
-        for i in range(1, n - 1):
-            y_ip = x[i - 1][0][dimensionIndex]
-            y_i = x[i][0][dimensionIndex]
-            y_in = x[i + 1][0][dimensionIndex]
-
-            f[i, 0] = 6.0 * ((y_in - y_i) - (y_i - y_ip))
+        f[1:-1, 0] = 6.0 * (y[2:] - 2 * y[1:-1] + y[:-2])
 
         s = np.linalg.solve(A, f)
 
         degree = 3
         abcd = np.zeros((n - 1, degree + 1), dtype=np.float64)
 
-        for i in range(n - 1):
-            y_i = x[i][0][dimensionIndex]
-            y_in = x[i + 1][0][dimensionIndex]
-
-            abcd[i, 0] = (s[i + 1, 0] - s[i, 0]) / 6.0
-            abcd[i, 1] = s[i, 0] / 2.0
-            abcd[i, 2] = (y_in - y_i) - (2 * s[i, 0] + s[i + 1, 0]) / 6.0
-            abcd[i, 3] = y_i
+        abcd[:, 0] = (s[1:, 0] - s[:-1, 0]) / 6.0
+        abcd[:, 1] = s[:-1, 0] / 2.0
+        abcd[:, 2] = (y[1:] - y[:-1]) - (2 * s[:-1, 0] + s[1:, 0]) / 6.0
+        abcd[:, 3] = y[:-1]
 
         return abcd
 
@@ -54,17 +47,14 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
 
         # repeats the point labelCount times
         if n == 1:
-            for i in range(labelCount):
-                refinedPoints.append(points[0].copy())
+            refinedPoints = [points[0][0].copy()] * labelCount
 
         # linearly interpolates between first and last points
         if n == 2:
-            pts1 = points[0]
-            pts2 = points[1]
-            for i in range(labelCount):
-                alpha = i / (labelCount - 1.0)
-                interpolatedPoint = (1.0 - alpha) * pts1 + alpha * pts2
-                refinedPoints.append(interpolatedPoint)
+            pts1 = points[0][0]
+            pts2 = points[1][0]
+            alpha_values = np.linspace(0, 1, labelCount)
+            refinedPoints = [(1 - alpha) * pts1 + alpha * pts2 for alpha in alpha_values]
 
         # cubic spline interpolation between points
         if n >= 3:
@@ -78,7 +68,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                 i_d = t - t_i
 
                 if t_i == n - 1 and i_d == 0:
-                    refinedPoints.append(points[n - 1])
+                    refinedPoints.append(points[n - 1][0])
                     break
 
                 abcd_x_i = abcd_x[t_i]
@@ -99,58 +89,37 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         return refinedPoints
 
     def isEmpty(self, allPathPointsData, dataCount):
-        for i in range(dataCount):
-            # 0 - red, 1 - green, 2 - blue
-            if allPathPointsData[i][0] > 0 and allPathPointsData[i][1] > 0 and allPathPointsData[i][2] > 0:
-                return False
-        return True
+        check = np.all(allPathPointsData[:dataCount, :3] > 0, axis=1)
+        return not np.any(check)
 
     def createDensityDecreasingPath(self, image, hInitial, L, features, flann_index, kernelFunctor, d, K, convergenceTolerence, maximumLength):
-        allPathPoints = np.zeros((image.shape[0] * image.shape[1], L, 3), dtype=np.float32)
-
-        query = np.empty((1, d), dtype=np.float32)
-
         direction = -1.0
         h = hInitial
+        similarityDistance = d * 4.0
+        noPathPointCount, minimumPointCount = 0, 32
+        allPathPoints = np.zeros((image.shape[0] * image.shape[1], L, 3), dtype=np.float32)
+        query = np.expand_dims(np.array(image), axis=2).astype(np.float32)
 
-        noPathPointCount = 0
-
-        pixelIndex = 0
         for y in range(image.shape[0]):
-            irow = image[y]
-
             for x in range(image.shape[1]):
+                pixelIndex = y * image.shape[1] + x
                 if self.isEmpty(allPathPoints[pixelIndex], L):
-                    query[0] = irow[x]
-
-                    minimumPointCount = 32
-                    similarityDistance = d * 2.0**2  # squared distance
                     similarPixels = []
+
                     unregularPathPoints, h = DensityDecreasingPath.findPath(
-                        features, flann_index, K, minimumPointCount, h, query, convergenceTolerence, L // 2,
+                        features, flann_index, K, minimumPointCount, h, query[y, x], convergenceTolerence, L // 2,
                         direction, maximumLength, kernelFunctor, similarPixels, similarityDistance, image.shape[1], image.shape[0])
 
-                    pathPointCount = len(unregularPathPoints)
-                    if pathPointCount <= 1:
-                        # print(f'P({x}, {y}) = {int(irow[x, 0])} {int(irow[x, 1])} {int(irow[x, 2])}')
-                        noPathPointCount += 1
-
+                    noPathPointCount += (len(unregularPathPoints) <= 1)
                     pathPoints = self.regularizePoints(unregularPathPoints, L)
-
-                    for i in range(len(pathPoints)):
-                        allPathPoints[pixelIndex][i] = pathPoints[i]  # Assign red, green, and blue
+                    allPathPoints[pixelIndex] = pathPoints
 
                     # For similar pixels, use obtained density-decreasing centers to speed up
-                    for pts in similarPixels:
-                        pixelIndexSimilar = int(pts[1] * image.shape[1] + pts[0])
-                        similarPathPointsData = allPathPoints[pixelIndexSimilar]
-
-                        for i in range(len(pathPoints)):
-                            similarPathPointsData[i] = pathPoints[i]  # Assign red, green, and blue
+                    similarPixelsArray = np.array(similarPixels)
+                    pixelIndices = np.round(similarPixelsArray[:, 1] * image.shape[1] + similarPixelsArray[:, 0]).astype(int)
+                    allPathPoints[pixelIndices, :len(pathPoints)] = pathPoints
 
                     h = max(h * 0.99, hInitial)
-
-                pixelIndex += 1
             print(f' [{h:.5f}] ', end='', flush=True)
 
         print(f'\n{100.0 * noPathPointCount / (image.shape[1] * image.shape[0])}% no density-decrease\n\n')
@@ -159,40 +128,26 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
 
     def createAugmentedImages(self, image, allPathPoints, d, labelCount, augmentationCount, applyDPDA_Decisions):
         augmentedImages = []
+        DPDA_Baselines = self.randUnity(augmentationCount)
+        perlinRoughness = np.random.uniform(1.0, 5.0, size=augmentationCount)
+        perlinNoises = self.noiseGenerator.create(image.shape[1], image.shape[0], perlinRoughness)
 
         for i in range(augmentationCount):
+            augmentedImage = image.copy()
+
             applyDPDA = not allPathPoints is None and applyDPDA_Decisions[i]
+            if applyDPDA:
+                DPDA_Effects = 1.0 - (perlinNoises[i] / 255.0)
+                noiseIndexDPDA = np.minimum(DPDA_Baselines[i] + DPDA_Effects, 1.0)
+                DPDA_Indices = np.minimum(np.floor((labelCount - 1) * noiseIndexDPDA), labelCount - 1).astype(int)
 
-            DPDA_Baseline = self.randUnity()
-            brightnessBaseline = 1.0 - DPDA_Baseline
-            # print('DPDA_Baseline =', DPDA_Baseline, ', brightnessBaseline =', brightnessBaseline)
+                yIndices, xIndices = np.meshgrid(np.arange(image.shape[0]), np.arange(image.shape[1]), indexing='ij')
+                pixelIndices = yIndices * image.shape[1] + xIndices
+                rgbValues = allPathPoints[pixelIndices.flatten(), DPDA_Indices.flatten()]
 
-            perlinRoghness = np.random.uniform(1.0, 5.0)
-            perlinNoise = self.noiseGenerator.create(image.shape[1], image.shape[0], perlinRoghness)
+                augmentedImage = np.reshape(rgbValues, augmentedImage.shape)
 
-            augmentedImage = np.zeros_like(image, dtype=np.uint8)
-
-            pixelIndex = 0
-            for y in range(image.shape[0]):
-                irow = image[y]
-                pmrow = perlinNoise[y]
-                airow = augmentedImage[y]
-
-                for x in range(image.shape[1]):
-                    rgb = irow[x].copy()
-
-                    if applyDPDA:
-                        DPDA_Effect = 1.0 - (pmrow[x] / 255.0)
-                        noiseIndexDPDA = min(DPDA_Baseline + DPDA_Effect, 1.0)
-                        DPDA_Index = min(int((labelCount - 1) * noiseIndexDPDA), labelCount - 1)
-                        DPDA_Data = allPathPoints[pixelIndex]
-
-                        rgb = DPDA_Data[DPDA_Index]
-
-                    airow[x] = rgb
-                    pixelIndex += 1
-
-            augmentedImages.append(augmentedImage)
+            augmentedImages.append(augmentedImage.astype(np.uint8))
 
         return augmentedImages
 
@@ -291,31 +246,23 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
             return self.pipelineDataAugmenter.augmentImage(image)
 
     def estimateH(self, image):
-        distances = []
+        irow = image[1:-1, 1:-1]
+        urow = image[:-2, 1:-1]
+        drow = image[2:, 1:-1]
 
-        max_d = 256 * 256
+        c = irow
+        c1 = image[1:-1, :-2]
+        c2 = image[1:-1, 2:]
+        c3 = urow
+        c4 = drow
 
-        for y in range(1, image.shape[0] - 1):
-            irow = image[y]
-            urow = image[y - 1]
-            drow = image[y + 1]
+        d1 = np.sum((c - c1)**2, axis=-1)
+        d2 = np.sum((c - c2)**2, axis=-1)
+        d3 = np.sum((c - c3)**2, axis=-1)
+        d4 = np.sum((c - c4)**2, axis=-1)
 
-            for x in range(1, image.shape[1] - 1):
-                c = irow[x]
-                c1 = irow[x - 1]
-                c2 = irow[x + 1]
-                c3 = urow[x]
-                c4 = drow[x]
-
-                d1 = int(int(c[0]) - c1[0])**2 + int(int(c[1]) - c1[1])**2 + int(int(c[2]) - c1[2])**2
-                d2 = int(int(c[0]) - c2[0])**2 + int(int(c[1]) - c2[1])**2 + int(int(c[2]) - c2[2])**2
-                d3 = int(int(c[0]) - c3[0])**2 + int(int(c[1]) - c3[1])**2 + int(int(c[2]) - c3[2])**2
-                d4 = int(int(c[0]) - c4[0])**2 + int(int(c[1]) - c4[1])**2 + int(int(c[2]) - c4[2])**2
-                d = min(d1, d2, d3, d4)
-
-                if 1 < d < max_d:
-                    distances.append(d)
-
-        median = np.median(distances)
+        distances = np.minimum.reduce([d1, d2, d3, d4])
+        valid_distances = distances[(1 < distances) & (distances < 256 * 256)]
+        median = np.median(valid_distances)
 
         return max(np.sqrt(median), 1.0)

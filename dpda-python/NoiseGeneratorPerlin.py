@@ -1,7 +1,6 @@
 import numpy as np
 import random
 import time
-import math
 from NoiseGenerator import NoiseGenerator
 from PerlinNoise import PerlinNoise
 
@@ -11,10 +10,12 @@ class NoiseGeneratorPerlin(NoiseGenerator):
     def create(self, width, height, roughness):
         perlinNoiseCreator = PerlinNoise(self.getSeed())
 
-        perlinNoise = np.fromfunction(lambda y, x: self.calculatePixel(
-            x, y, width, height, roughness, perlinNoiseCreator),
-                                      (height, width),
-                                      dtype=np.uint8)
+        y, x = np.meshgrid(np.arange(height), np.arange(width), indexing='ij')
+
+        perlinNoise = np.fromfunction(lambda i, y, x: self.calculatePixel(
+            x, y, width, height, roughness[i], perlinNoiseCreator),
+            (len(roughness), height, width),
+            dtype=np.uint8)
 
         return perlinNoise
 

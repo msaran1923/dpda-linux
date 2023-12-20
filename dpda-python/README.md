@@ -11,7 +11,7 @@ DPDA v1.06p
 
 2. Install Python dependencies:
 
-       pip install numpy pyflann3 h5py
+       pip install numpy h5py
    
    or
    

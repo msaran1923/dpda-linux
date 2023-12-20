@@ -1,5 +1,6 @@
 import random
 import time
+import numpy as np
 
 class DataAugmenter:
     def __init__(self, imageLoader, imageSaver):
@@ -26,9 +27,9 @@ class DataAugmenter:
         return x * x * x
 
     @staticmethod
-    def randUnity():
+    def randUnity(size=None):
         randomRange = 8192
-        return random.randint(0, randomRange - 1) / (randomRange - 1.0)
+        return np.random.randint(0, randomRange, size=size) / (randomRange - 1.0)
 
     @staticmethod
     def randRange(minValue, maxValue):
