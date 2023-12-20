@@ -1,12 +1,10 @@
 from DataAugmenterDistributionPreserving import DataAugmenterDistributionPreserving
-from ImageLoaderOpenCV import ImageLoaderOpenCV
-from ImageSaverOpenCV import ImageSaverOpenCV
 from NoiseGeneratorPerlin import NoiseGeneratorPerlin
 
 class DataAugmentationPipeline:
-    def __init__(self):
-        imageLoader = ImageLoaderOpenCV()
-        imageSaver = ImageSaverOpenCV()
+    def __init__(self, imageLoader, imageSaver):
+        self.imageLoader = imageLoader
+        self.imageSaver = imageSaver
         noiseGenerator = NoiseGeneratorPerlin()
         DPDA_Power = 1.0
         dataAugmenterDistributionPreserving = DataAugmenterDistributionPreserving(imageLoader, imageSaver, noiseGenerator, DPDA_Power)

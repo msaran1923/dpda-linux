@@ -30,7 +30,7 @@ t1 = time.time()
 
 imageLoader = ImageLoaderOpenCV()
 imageSaver = ImageSaverOpenCV()
-dataAugmenter = DataAugmentationPipeline()
+dataAugmenter = DataAugmentationPipeline(imageLoader, imageSaver)
 dataAugmenterRandomErase = DataAugmenterRandomErase(imageLoader, imageSaver)
 dataAugmenterHistogramEqualization = DataAugmenterHistogramEqualization(imageLoader, imageSaver)
 dataAugmenterGammaCorrection = DataAugmenterGammaCorrection(imageLoader, imageSaver)
