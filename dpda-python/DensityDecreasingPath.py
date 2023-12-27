@@ -26,11 +26,11 @@ class DensityDecreasingPath:
                 break # converged
 
             indicesArr = indices[0]
-            distancesArr = distances
+            distancesArr = distances[0]
 
             # perturb farthest neighbour point if it equals to the center point
             minimumRadius = 1.0
-            windowRadius = np.sqrt(distancesArr[0][count - 1])
+            windowRadius = np.sqrt(distancesArr[count - 1])
             if iteration == 0 and windowRadius < minimumRadius:
                 DensityDecreasingPath.perturbPoint(x, minimumRadius)
                 continue
@@ -97,7 +97,7 @@ class DensityDecreasingPath:
 
         if iteration == firstIteration:
             similarPixels.clear()
-            mask = distancesArr[0][:count] <= similarityDistance
+            mask = distancesArr[:count] <= similarityDistance
             rValues = indicesArr[:count][mask]
 
             xxValues = rValues % imageWidth
