@@ -11,7 +11,7 @@ from DataAugmenterFlip import DataAugmenterFlip
 from ImageLoaderOpenCV import ImageLoaderOpenCV
 from ImageSaverOpenCV import ImageSaverOpenCV
 
-print('Distribution-preserving Data Augmentation (DPDA) v1.08p')
+print('Distribution-preserving Data Augmentation (DPDA) v1.08p\n')
 
 directoryNames = []
 directoryNames.append('train')
@@ -51,7 +51,7 @@ for i in range(len(imagePaths)):
 
 t2 = time.time()
 duration = t2 - t1
-print('Elapsed time:', duration, 'seconds')
+print(f'Total elapsed time: {duration:.4f} seconds')
 # augment images - end
 
 logFileName = '_imageWithProblems.txt'

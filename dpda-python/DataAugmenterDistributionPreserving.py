@@ -99,10 +99,14 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         noPathPointCount, minimumPointCount = 0, 32
         allPathPoints = np.zeros((image.shape[0] * image.shape[1], L, 3), dtype=np.float32)
         query = np.expand_dims(np.array(image), axis=2).astype(np.float32)
+        totalPixels = image.shape[0] * image.shape[1]
 
         for y in range(image.shape[0]):
             for x in range(image.shape[1]):
                 pixelIndex = y * image.shape[1] + x
+                if pixelIndex % (totalPixels // 10) == 0:
+                    print(f'[{pixelIndex * 101 // totalPixels}%]...', end=' ', flush=True)
+
                 if self.isEmpty(allPathPoints[pixelIndex], L):
                     similarPixels = []
 
@@ -121,9 +125,8 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                         allPathPoints[pixelIndices, :len(pathPoints)] = pathPoints
 
                     h = max(h * 0.99, hInitial)
-            print(f' [{h:.5f}] ', end='', flush=True)
 
-        print(f'\n{100.0 * noPathPointCount / (image.shape[1] * image.shape[0])}% no density-decrease\n\n')
+        print('[100%]')
 
         return allPathPoints
 
@@ -153,6 +156,8 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         return augmentedImages
 
     def distributionPreservingDataAugmentation(self, image, augmentationCount, DPDA_Power, augmentationPercentage, imageFileName):
+        print(f'[{imageFileName}]')
+
         # create color features
         d = image.shape[2]
         features = FeatureExtractor.create(image)
@@ -176,7 +181,9 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         if atLeastOneDPDA_Application:
             if os.path.exists(f'pathpoints/pathpoint_{imageFileName}.hdf5'):
                 allPathPoints = self.allPathPointsLoader(imageFileName)
+                print(f'Loaded existing pathpoints from {imageFileName}.hdf5')
             else:
+                print('Generating pathpoints: ', end='')
                 allPathPoints = self.createDensityDecreasingPath(image, hInitial, L, features, flann_index,
                                                                  kernelFunctor, d, K, convergenceTolerance, maximumLength)
                 self.allPathPointsWriter(allPathPoints, imageFileName)
@@ -223,7 +230,7 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
         duration = t2 - t1
 
         with self.lock:
-            print(f", Elapsed time: {duration:.2f} seconds")
+            print(f'Elapsed time: {duration:.4f} seconds\n')
 
         # write the original image
         outputFileName = os.path.join(fileDirectory, imageFileName + extension)
