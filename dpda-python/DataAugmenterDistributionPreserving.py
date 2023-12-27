@@ -115,9 +115,10 @@ class DataAugmenterDistributionPreserving(DataAugmenter):
                     allPathPoints[pixelIndex] = pathPoints
 
                     # For similar pixels, use obtained density-decreasing centers to speed up
-                    similarPixelsArray = np.array(similarPixels)
-                    pixelIndices = np.round(similarPixelsArray[:, 1] * image.shape[1] + similarPixelsArray[:, 0]).astype(int)
-                    allPathPoints[pixelIndices, :len(pathPoints)] = pathPoints
+                    if similarPixels != []:
+                        similarPixelsArray = np.array(similarPixels)
+                        pixelIndices = np.round(similarPixelsArray[:, 1] * image.shape[1] + similarPixelsArray[:, 0]).astype(int)
+                        allPathPoints[pixelIndices, :len(pathPoints)] = pathPoints
 
                     h = max(h * 0.99, hInitial)
             print(f' [{h:.5f}] ', end='', flush=True)
