@@ -39,20 +39,16 @@ class DataAugmenterHistogramEqualization(DataAugmenter):
         return True
 
     def augmentImage(self, image):
-        augmentedImage = image.copy()
-
         if image.shape[2] == 3:
             rgbChannels = cv2.split(image)
-
-            equalizedImages = []
-            for i in range(3):
-                equalizedImage = cv2.equalizeHist(rgbChannels[i])
-                equalizedImages.append(equalizedImage)
-            augmentedImage = cv2.merge(equalizedImages)
-        if image.shape[2] == 1:
+            equalizedChannels = [cv2.equalizeHist(channel) for channel in rgbChannels]
+            augmentedImage = cv2.merge(equalizedChannels)
+        elif image.shape[2] == 1:
             augmentedImage = cv2.equalizeHist(image)
-
-        if self.pipelineDataAugmenter is None:
-            return augmentedImage
         else:
-            return self.pipelineDataAugmenter.augmentImage(augmentedImage)
+            return image
+
+        if self.pipelineDataAugmenter is not None:
+            augmentedImage = self.pipelineDataAugmenter.augmentImage(augmentedImage)
+
+        return augmentedImage

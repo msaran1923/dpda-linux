@@ -1,32 +1,36 @@
 import numpy as np
 import random
 import time
-import math
 from NoiseGenerator import NoiseGenerator
 from PerlinNoise import PerlinNoise
 
 class NoiseGeneratorPerlin(NoiseGenerator):
     runningIndex = 0
-        
+
     def create(self, width, height, roughness):
         perlinNoiseCreator = PerlinNoise(self.getSeed())
 
-        perlinNoise = np.zeros((height, width), dtype=np.uint8)
+        y, x = np.meshgrid(np.arange(height), np.arange(width), indexing='ij')
 
-        noiseScale = self.randRange(0.1, 10.0)
-        noiseCenter = self.randRange(0.35, 0.65)
-
-        for y in range(height):
-            for x in range(width):
-                xf = x / width
-                yf = y / height
-
-                noise = perlinNoiseCreator.noise(xf * roughness, yf * roughness, 1.0)
-                adjustedNoise = (math.tanh(noiseScale * (noise - noiseCenter)) + 1.0) / 2.0
-
-                perlinNoise[y, x] = int(255 * adjustedNoise)
+        perlinNoise = np.fromfunction(lambda i, y, x: self.calculatePixel(
+            x, y, width, height, roughness[i], perlinNoiseCreator),
+            (len(roughness), height, width),
+            dtype=np.uint8)
 
         return perlinNoise
+
+    def calculatePixel(self, x, y, width, height, roughness,
+                       perlinNoiseCreator):
+        xf = x / width
+        yf = y / height
+
+        noiseScale = np.random.uniform(0.1, 10.0)
+        noiseCenter = np.random.uniform(0.35, 0.65)
+
+        noise = perlinNoiseCreator.noise(xf * roughness, yf * roughness, 1.0)
+        adjustedNoise = (np.tanh(noiseScale * (noise - noiseCenter)) + 1.0) / 2.0
+
+        return np.vectorize(lambda x: int(255 * x))(adjustedNoise)
 
     def getSeed(self):
         self.runningIndex += 1
